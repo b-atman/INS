@@ -1,0 +1,158 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import "leaflet/dist/leaflet.css";
+import "leaflet-geosearch/dist/geosearch.css";
+import L from "leaflet";
+import { OpenStreetMapProvider, GeoSearchControl } from 'leaflet-geosearch'
+import marker from './marker.webp'
+import { Icon } from 'leaflet'
+const markerIcon = new L.Icon({
+iconUrl: marker,
+iconSize: [35, 35],
+})
+const Search = ({ setLat, setLon, setProp2 }) => {
+const map = useMap();
+useEffect(() => {
+const provider = new OpenStreetMapProvider();
+const searchControl = new GeoSearchControl({
+provider: new OpenStreetMapProvider(),
+style: 'bar',
+showMarker: true,
+showPopup: true,
+autoClose: true,
+retainZoomLevel: true,
+animateZoom: true,
+keepResult: true,
+searchLabel: 'search',
+marker: {
+icon: L.icon({
+iconSize: [25, 41],
+iconAnchor: [10, 41],
+popupAnchor: [2, -40],
+iconUrl: marker,
+shadowUrl: "https://unpkg.com/leaflet@1.6/dist/images/marker-shadow.png"
+})
+}
+});
+console.log(searchControl)
+map.addControl(searchControl);
+async function searchEventHandler(result) {
+console.log(result.location);
+}
+map.on('geosearch/showlocation', searchEventHandler);
+return () => map.removeControl(searchControl);
+}, []);
+return null;
+}
+function App() {
+const [hotels, setHotels] = useState([]);
+const [lat, setLat] = useState(null);
+const [lon, setLon] = useState(null);
+const [prop2, setProp2] = useState(null);
+const [location, setLocation] = useState({ lat: 19.10744, lng: 72.83725 });
+const [zoom, setZoom] = useState(13);
+function handleZoomChange() {
+if (mapRef.current) {
+setZoom(mapRef.current.getZoom());
+}
+}
+useEffect(() => {
+// Get the user's current location using the browser's geolocation API
+navigator.geolocation.getCurrentPosition(
+position => {
+setLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+},
+error => console.error(error)
+);
+}, []);
+useEffect(() => {
+if (location) {
+const url = `https://travel-advisor.p.rapidapi.com/hotels/list-bylatlng?latitude=19.10744&longitude=72.83724`;
+fetch(url, {
+headers: {
+'x-rapidapi-key': '0a23a62d90mshadb9aebfcd4761fp140942jsndcb727716652',
+'x-rapidapi-host': 'travel-advisor.p.rapidapi.com'
+}
+})
+.then(response => response.json())
+.then(data => {
+console.log(data.data)
+let hotelLocations = data?.data?.map(result => {
+if (Number(result.latitude) && Number(result.longitude) && result.name &&
+result.rating) {
+return {
+lat: Number(result.latitude).toFixed(5),
+lng: Number(result.longitude).toFixed(5),
+image: result.photo?.images?.large.url,
+name: result.name,
+rating: result.rating
+}
+}
+});
+hotelLocations = hotelLocations.filter((p) => p !== undefined)
+setHotels(hotelLocations);
+})
+.catch(error => console.log(error));
+}
+}, [location]);
+const mapRef = useRef(null);
+console.log(hotels)
+if (location.lat === undefined || location.lng === undefined) {
+return <div>Loading...</div>;
+}
+return (
+<MapContainer
+center={location}
+zoom={zoom}
+style={{ width: '100%', height: '500px', borderRadius: '10px' }}
+onZoomEnd={handleZoomChange}
+ref={mapRef}
+>
+<Search provider={new OpenStreetMapProvider()} setLat={setLat} setProp2={setProp2}
+setLon={setLon} />
+<TileLayer
+url='https://api.maptiler.com/maps/basic/{z}/{x}/{y}.png?key=GCrOaQueIQ4AmML6iiTF'
+attribution='<a href="https://www.maptiler.com/copyright/" target="_blank">&copy;
+MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy;
+OpenStreetMap contributors</a>'
+/>
+{hotels.map(hotel => {
+return <Marker key={hotel.location_id} icon={new Icon({ iconUrl: marker, iconSize: 
+[25, 41], iconAnchor: [12, 41] })} position={{ lat: hotel.lat, lng: hotel.lng }}>
+<Popup>
+<h2>{hotel.name}</h2>
+<img src={hotel?.image} style={{ width: '230px', height: '100px', 
+borderRadius: '10px', objectFit: 'cover' }} />
+<p>{hotel.rating}</p>
+</Popup>
+</Marker>
+}
+)}
+</MapContainer>
+);
+}
+export default App
+
+
+
+import folium
+import json
+from geopy.geocoders import Nominatim
+from geopy.distance import geodesic
+from geopy.point import Point
+import random
+
+restaurants = []
+eolocator = Nominatim(user_agent="restaurant_locator")
+
+location = geolocator.geocode(input("Enter your location: "))
+map_center = [location.latitude, location.longitude]
+my_map = folium.Map(location=map_center, zoom_start=15)
+folium.Marker([location.latitude, location.longitude], popup="Your Location", icon=folium.Icon(color="red")).add_to(my_map)
+
+for i in range(5):
+  destination = geodesic(kilometers=random.randint(1,5)).destination(Point(location.latitude, location.longitude), bearing=random.randint(0, 360))
+  print(location)
+  marker = folium.Marker([destination.latitude, destination.longitude], popup=f"Restaurant {i+1}")
+  marker.add_to(my_map)
+my_map
