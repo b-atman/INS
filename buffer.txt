@@ -1,0 +1,28 @@
+#include <stdio.h>
+#include <string.h>
+
+int main(void)
+{
+    char buff[30];
+    int pass = 0;
+
+    printf("\nPassword:");
+    gets(buff);
+
+    if(strlen("Comp$4561!")>=strlen(buff)){
+        if(strcmp(buff, "Comp$4561!"))
+        {
+            printf("incorrect password");
+        }
+        else{
+            printf("Correct Password");
+            pass = 1;
+        }
+    }
+    else{
+        printf("Overflow");
+    }
+    if(pass){
+        printf("\nRoot priveledges are given to user");
+    }
+}
